@@ -19,7 +19,7 @@ namespace bitlog
         class Date
         {
         public:
-            static size_t getTime()
+            static size_t now()
             {
                 return (size_t)time(nullptr);
             }
