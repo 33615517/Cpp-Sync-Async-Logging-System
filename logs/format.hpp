@@ -16,7 +16,7 @@ namespace bitlog
     class FormatItem
     {
     public:
-        using ptr = std::shared_ptr<FormatItem>;
+        using ptr = std::shared_ptr<FormatItem>; // 格式化子项的共享指针类型。
 
         // 将对应的日志内容写入输出流中
         virtual void format(std::ostream &os, const LogMsg &msg) = 0;
@@ -28,6 +28,7 @@ namespace bitlog
     class MsgFormatItem : public FormatItem
     {
     public:
+        // 输出日志正文。
         void format(std::ostream &out, const LogMsg &msg) override
         {
             out << msg._payload;
@@ -38,6 +39,7 @@ namespace bitlog
     class LevelFormatItem : public FormatItem
     {
     public:
+        // 输出日志等级名称。
         void format(std::ostream &out, const LogMsg &msg) override
         {
             out << LogLevel::toString(msg._level);
@@ -48,19 +50,21 @@ namespace bitlog
     class TimeFormatItem : public FormatItem
     {
     public:
+        // 保存时间格式；默认只输出时、分、秒。
         TimeFormatItem(const std::string &fmt = "%H:%M:%S")
             : _time_fmt(fmt)
         {
         }
 
+        // 按照 _time_fmt 格式化日志产生时间。
         void format(std::ostream &out, const LogMsg &msg) override
         {
-            struct tm t;
+            struct tm t; // 保存转换后的本地时间。
 
             // 将时间戳转换成本地时间
             localtime_r(&msg._ctime, &t);
 
-            char buf[64];
+            char buf[64]; // 保存 strftime 生成的时间字符串。
 
             // 按照 _time_fmt 指定的格式生成时间字符串
             strftime(buf, sizeof(buf), _time_fmt.c_str(), &t);
@@ -76,6 +80,7 @@ namespace bitlog
     class FileFormatItem : public FormatItem
     {
     public:
+        // 输出产生这条日志的源文件名。
         void format(std::ostream &out, const LogMsg &msg) override
         {
             out << msg._file;
@@ -87,6 +92,7 @@ namespace bitlog
     class ThreadFormatItem : public FormatItem
     {
     public:
+        // 输出线程信息；注意：当前实现实际输出的是源码行号。
         void format(std::ostream &out, const LogMsg &msg) override
         {
             out << msg._line;
@@ -97,6 +103,7 @@ namespace bitlog
     class LoggerFormatItem : public FormatItem
     {
     public:
+        // 输出日志器名称。
         void format(std::ostream &out, const LogMsg &msg) override
         {
             out << msg._logger;
@@ -107,6 +114,7 @@ namespace bitlog
     class TabFormatItem : public FormatItem
     {
     public:
+        // 输出一个制表符，用于分隔日志字段。
         void format(std::ostream &out, const LogMsg &msg) override
         {
             out << "\t";
@@ -117,6 +125,7 @@ namespace bitlog
     class NewLineFormatItem : public FormatItem
     {
     public:
+        // 输出一个换行符，结束当前日志行。
         void format(std::ostream &out, const LogMsg &msg) override
         {
             out << "\n";
@@ -128,18 +137,20 @@ namespace bitlog
     class OtherFormatItem : public FormatItem
     {
     public:
+        // 保存需要原样输出的普通字符串。
         OtherFormatItem(const std::string &str)
             : _str(str)
         {
         }
 
+        // 输出构造时保存的普通字符串。
         void format(std::ostream &out, const LogMsg &msg) override
         {
             out << _str;
         }
 
     private:
-        std::string _str;
+        std::string _str; // 需要原样输出的文本。
     };
     /*
     %d 表示日期，包含子格式 {%H:%M:%S}
@@ -155,12 +166,14 @@ namespace bitlog
     class Formatter
     {
     public:
+        using ptr = std::shared_ptr<Formatter>; // 格式化器的共享指针类型。
+        // 保存格式规则，并将其解析成一组格式化子项。
         Formatter(const std::string &pattern = "[%d{%H:%M:%S}][%t] [%c][%f:%l]%T%m%n")
             : _pattern(pattern)
         {
             assert(parsePattern());
         }
-        // 对msg进行格式化输出
+        // 按照格式规则把日志消息写入指定输出流。
         void format(std::ostream &out, const LogMsg &msg)
         {
             for (auto &item : _items)
@@ -168,6 +181,7 @@ namespace bitlog
                 item->format(out, msg);
             }
         }
+        // 将格式化结果作为字符串返回。
         std::string format(LogMsg &msg)
         {
             std::ostringstream oss;
@@ -181,10 +195,10 @@ namespace bitlog
         {
             // 1. 对格式化规则字符串进行解析
             // abcde[%d{%H:%M:%S}][%p]%T%m%n
-            std::vector<std::pair<std::string, std::string>> fmt_order;
-            size_t pos = 0;
+            std::vector<std::pair<std::string, std::string>> fmt_order; // 按出现顺序保存标记和参数。
+            size_t pos = 0; // 当前解析位置。
 
-            std::string key, val;
+            std::string key, val; // key 是格式标记，val 是标记参数或普通文本。
             while (pos < _pattern.size())
             {
                 // 1.处理原始字符串--判断是否为%，不是就是原始字符
@@ -209,7 +223,7 @@ namespace bitlog
                 val.clear();
                 pos += 1;
                 key = _pattern[pos];
-                bool error_flag = false;
+                bool error_flag = false; // 标记带参数的格式项是否完整。
                 if (pos + 1 < _pattern.size() && _pattern[pos + 1] == '{')
                 {
                     error_flag = true;
@@ -228,6 +242,7 @@ namespace bitlog
                     }
                     pos++; // 因为遇到了}，所以pos需要+1
                 }
+                else pos++; // 没有{}，所以pos需要+1
                 fmt_order.push_back(std::make_pair(key, val));
                 key.clear();
                 val.clear();
@@ -278,7 +293,7 @@ namespace bitlog
             {
                 return std::make_shared<NewLineFormatItem>();
             }
-            else if(fmt.empty() && !value.empty())
+            else if (fmt.empty() && !value.empty())
             {
                 return std::make_shared<OtherFormatItem>(value);
             }
@@ -288,8 +303,8 @@ namespace bitlog
         }
 
     private:
-        std::string _pattern;                // 格式化规则字符串
-        std::vector<FormatItem::ptr> _items; // 存储解析后的格式化子项
+        std::string _pattern;                // 原始格式化规则字符串。
+        std::vector<FormatItem::ptr> _items; // 按输出顺序保存解析后的格式化子项。
     };
 }
 

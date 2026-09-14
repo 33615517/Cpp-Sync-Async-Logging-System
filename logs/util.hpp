@@ -19,6 +19,7 @@ namespace bitlog
         class Date
         {
         public:
+            // 获取当前 Unix 时间戳，单位为秒。
             static size_t now()
             {
                 return (size_t)time(nullptr);
@@ -27,6 +28,7 @@ namespace bitlog
         class File
         {
         public:
+            // 判断指定文件或目录是否存在。
             static bool exists(const std::string &pathname)
             {
                 // return access(pathname.c_str(), F_OK) == 0;
@@ -40,6 +42,7 @@ namespace bitlog
                     return false;
                 }
             }
+            // 从完整路径中提取目录部分；没有目录时返回当前目录 "."。
             static std::string path(const std::string &pathname)
             {
                 size_t pos = pathname.find_last_of("/\\");
@@ -52,9 +55,10 @@ namespace bitlog
                     return pathname.substr(0, pos + 1);
                 }
             }
+            // 按路径层级创建目录，已经存在的目录会被跳过。
             static void createDirectory(const std::string &pathname)
             {
-                size_t pos = 0, idx = 0;
+                size_t pos = 0, idx = 0; // pos 是分隔符位置，idx 是本轮查找起点。
                 while (idx < pathname.size())
                 {
                     pos = pathname.find_first_of("/\\", idx);
@@ -62,7 +66,7 @@ namespace bitlog
                     {
                         mkdir(pathname.c_str(), 0777);
                     }
-                    std::string parent_dir = pathname.substr(0, pos + 1);
+                    std::string parent_dir = pathname.substr(0, pos + 1); // 当前需要检查的父目录。
                     // if(parent_dir == "." || parent_dir == "..")
                     // {
                     //     idx = pos + 1;

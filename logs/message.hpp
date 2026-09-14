@@ -18,6 +18,7 @@
 #include <cstddef>
 namespace bitlog
 {
+    // 一条日志的完整上下文，供格式化器读取和输出。
     struct LogMsg
     {
         time_t _ctime;          // 日志产生的时间戳
@@ -27,6 +28,7 @@ namespace bitlog
         std::string _file;      // 源文件名称
         std::string _logger;    // 日志器名称
         std::string _payload;   // 日志主体消息
+        // 创建日志消息，并自动记录当前时间和当前线程 ID。
         LogMsg(LogLevel::Level level,
                size_t line,
                const std::string file,

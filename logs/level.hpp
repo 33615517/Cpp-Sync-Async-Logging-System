@@ -8,10 +8,12 @@
 #define __M_LEVEL_H__
 namespace bitlog
 {
+    // 日志等级工具类：定义日志等级，并提供等级到字符串的转换。
     class LogLevel
     {
         
      public:
+        // 日志等级；数值越大表示日志越严重，OFF 表示关闭日志。
         enum class Level
         {
             UNKNOW=0,
@@ -22,6 +24,7 @@ namespace bitlog
             FATAL,
             OFF
         };
+        // 将日志等级转换为便于输出的字符串。
         static const char *toString(LogLevel::Level level)
         {
             switch (level)
