@@ -1,4 +1,4 @@
-# C++ 同步/异步日志系统
+# DualLog：C++ 同步/异步日志系统
 
 这是一个使用 C++11 编写的轻量级日志系统，支持同步日志、异步日志、日志等级过滤、自定义输出格式、多种日志落地方式以及全局日志器管理。
 
@@ -19,7 +19,7 @@
 ```text
 LOG/
 ├── logs/               日志系统核心代码
-│   ├── bitlog.h        对外头文件和日志宏
+│   ├── duallog.h       对外头文件和日志宏
 │   ├── logger.hpp      同步/异步日志器、建造者和日志器管理器
 │   ├── looper.hpp      异步工作线程和双缓冲调度
 │   ├── buffer.hpp      异步日志缓冲区
@@ -44,26 +44,26 @@ LOG/
 
 ## 快速开始
 
-只需要包含 `logs/bitlog.h`。下面创建一个异步日志器，同时将日志输出到终端和文件：
+只需要包含 `logs/duallog.h`。下面创建一个异步日志器，同时将日志输出到终端和文件：
 
 ```cpp
-#include "logs/bitlog.h"
+#include "logs/duallog.h"
 
 int main()
 {
-    std::unique_ptr<bitlog::LoggerBuilder> builder(
-        new bitlog::GlobalLoggerBuilder());
+    std::unique_ptr<duallog::LoggerBuilder> builder(
+        new duallog::GlobalLoggerBuilder());
 
     builder->buildLoggerName("app_logger");
-    builder->buildLoggerType(bitlog::LoggerType::LOGGER_ASYNC);
-    builder->buildLimitLevel(bitlog::LogLevel::Level::DEBUG);
+    builder->buildLoggerType(duallog::LoggerType::LOGGER_ASYNC);
+    builder->buildLimitLevel(duallog::LogLevel::Level::DEBUG);
     builder->buildFormatter(
         "[%d{%Y-%m-%d %H:%M:%S}][%c][%f:%l][%p]%T%m%n");
 
-    builder->buildSinks<bitlog::StdoutSink>();
-    builder->buildSinks<bitlog::FileSink>("./logfile/app.log");
+    builder->buildSinks<duallog::StdoutSink>();
+    builder->buildSinks<duallog::FileSink>("./logfile/app.log");
 
-    bitlog::Logger::ptr logger = builder->build();
+    duallog::Logger::ptr logger = builder->build();
 
     logger->debug("用户编号：%d", 1001);
     logger->info("程序启动成功");
@@ -75,7 +75,7 @@ int main()
 使用全局日志器时，也可以通过名称获取：
 
 ```cpp
-auto logger = bitlog::getLogger("app_logger");
+auto logger = duallog::getLogger("app_logger");
 if (logger)
 {
     logger->info("通过名称获取日志器");
@@ -87,13 +87,13 @@ if (logger)
 同步日志器会在调用线程中直接完成日志落地：
 
 ```cpp
-builder->buildLoggerType(bitlog::LoggerType::LOGGER_SYNC);
+builder->buildLoggerType(duallog::LoggerType::LOGGER_SYNC);
 ```
 
 异步日志器会先把格式化后的日志写入缓冲区，再由后台线程完成落地：
 
 ```cpp
-builder->buildLoggerType(bitlog::LoggerType::LOGGER_ASYNC);
+builder->buildLoggerType(duallog::LoggerType::LOGGER_ASYNC);
 ```
 
 异步日志器默认使用安全模式，生产缓冲区空间不足时会等待。性能测试时可以启用允许缓冲区持续扩容的模式：
@@ -109,13 +109,13 @@ builder->buildEnableUnSafeAsync();
 ### 输出到终端
 
 ```cpp
-builder->buildSinks<bitlog::StdoutSink>();
+builder->buildSinks<duallog::StdoutSink>();
 ```
 
 ### 输出到普通文件
 
 ```cpp
-builder->buildSinks<bitlog::FileSink>("./logfile/app.log");
+builder->buildSinks<duallog::FileSink>("./logfile/app.log");
 ```
 
 ### 按文件大小滚动
@@ -123,7 +123,7 @@ builder->buildSinks<bitlog::FileSink>("./logfile/app.log");
 下面表示单个文件达到约 1 MB 后切换到新文件：
 
 ```cpp
-builder->buildSinks<bitlog::RollBySizeSink>(
+builder->buildSinks<duallog::RollBySizeSink>(
     "./logfile/app-", 1024 * 1024);
 ```
 
@@ -155,11 +155,11 @@ builder->buildSinks<bitlog::RollBySizeSink>(
 系统会自动创建名为 `root` 的同步日志器。下面这些大写宏始终使用 root 日志器：
 
 ```cpp
-DEBUG("debug message");
-INFO("info message");
-WARN("warn message");
-ERROR("error message");
-FATAL("fatal message");
+DUALLOG_DEBUG("debug message");
+DUALLOG_INFO("info message");
+DUALLOG_WARN("warn message");
+DUALLOG_ERROR("error message");
+DUALLOG_FATAL("fatal message");
 ```
 
 如果希望使用自己创建的日志器及其等级、格式器和落地目标，应通过日志器指针调用：
@@ -218,10 +218,10 @@ g++ -std=c++11 -pthread test.cc -o test
 
 ## 扩展日志落地器
 
-自定义落地器只需要继承 `bitlog::LogSink` 并实现 `log()`：
+自定义落地器只需要继承 `duallog::LogSink` 并实现 `log()`：
 
 ```cpp
-class CustomSink : public bitlog::LogSink
+class CustomSink : public duallog::LogSink
 {
 public:
     void log(const char *data, size_t size) override

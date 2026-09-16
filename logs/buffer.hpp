@@ -1,13 +1,13 @@
 /*实现异步日志缓冲区*/
-#ifndef __M_BUFFER_H__
-#define __M_BUFFER_H__
+#ifndef DUALLOG_BUFFER_HPP
+#define DUALLOG_BUFFER_HPP
 #include <vector>
 #include <iostream>
 #include <assert.h>
 #include <algorithm> // std::copy
 #include <utility>   // std::swap
 #include"util.hpp"
-namespace bitlog
+namespace duallog
 {
 #define DEFAULT_BUFFER_SIZE (1 * 1024 * 1024)
 #define THRESHOLD_BUFFER_SIZE (8 * 1024 * 1024) // 8MD

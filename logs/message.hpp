@@ -8,15 +8,15 @@
     6. 日志主体消息
     7. 日志器名称          （当前支持多日志器的同时使用）
 */
-#ifndef __BITLOG_MESSAGE_HPP__
-#define __BITLOG_MESSAGE_HPP__
+#ifndef DUALLOG_MESSAGE_HPP
+#define DUALLOG_MESSAGE_HPP
 #include "level.hpp"
 #include <string>
 #include <thread>
 #include "util.hpp"
 #include <iostream>
 #include <cstddef>
-namespace bitlog
+namespace duallog
 {
     // 一条日志的完整上下文，供格式化器读取和输出。
     struct LogMsg

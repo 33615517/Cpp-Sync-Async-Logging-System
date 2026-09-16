@@ -1,5 +1,5 @@
-#ifndef __M_FMT_H__
-#define __M_FMT_H__
+#ifndef DUALLOG_FORMAT_HPP
+#define DUALLOG_FORMAT_HPP
 
 #include "util.hpp"
 #include "level.hpp"
@@ -9,7 +9,7 @@
 #include <vector>
 #include <sstream>
 #include <cassert>
-namespace bitlog
+namespace duallog
 {
     // 抽象格式化子项基类
     // 所有具体格式化类都继承它，每个子类负责格式化日志中的一种内容
@@ -305,7 +305,7 @@ namespace bitlog
                 return std::make_shared<OtherFormatItem>(value);
             }
             std::cout << "不支持的格式化标记：%" << fmt << std::endl;
-            abort();
+            abort();//立刻异常终止当前程序
             return FormatItem::ptr(nullptr);
         }
 

@@ -1,4 +1,4 @@
-#include "../logs/bitlog.h"
+#include "../logs/duallog.h"
 #include <unistd.h>
 #include <thread>
 #include <vector>
@@ -8,7 +8,7 @@
 void bench_log(const std::string &logger_name, size_t thr_count, size_t msg_count, size_t msg_size)
 {
     // 1.获取日志器
-    bitlog::Logger::ptr logger = bitlog::LoggerManager::getInstance().getLogger(logger_name);
+    duallog::Logger::ptr logger = duallog::LoggerManager::getInstance().getLogger(logger_name);
     std::cout << "测试日志：" << msg_count << "条，总大小：" << (msg_count * msg_size) << "字节(KB)，线程数量：" << thr_count << "，日志数量：" << msg_count << "，日志大小：" << msg_size << std::endl;
     // 2.组织指定长度的日志消息
     std::string msg(msg_size - 1, 'a'); // 少一个字节是为了给字符串结尾的'\0'留出空间
@@ -56,19 +56,19 @@ void bench_log(const std::string &logger_name, size_t thr_count, size_t msg_coun
 // 创建同步文件日志器并执行性能测试。
 void sync_bench()
 {
-    std::unique_ptr<bitlog::LoggerBuilder> builder(
-        new bitlog::GlobalLoggerBuilder()
+    std::unique_ptr<duallog::LoggerBuilder> builder(
+        new duallog::GlobalLoggerBuilder()
     );
 
     builder->buildLoggerName("sync_logger");
-    builder->buildLimitLevel(bitlog::LogLevel::Level::DEBUG);
+    builder->buildLimitLevel(duallog::LogLevel::Level::DEBUG);
     builder->buildFormatter(
         "[%d{%Y-%m-%d %H:%M:%S}][%c][%f:%l][%p]%T%m%n"
     );
-    builder->buildLoggerType(bitlog::LoggerType::LOGGER_SYNC);
-    builder->buildSinks<bitlog::FileSink>("./logfile/sync.log");
+    builder->buildLoggerType(duallog::LoggerType::LOGGER_SYNC);
+    builder->buildSinks<duallog::FileSink>("./logfile/sync.log");
 
-    bitlog::Logger::ptr logger = builder->build();
+    duallog::Logger::ptr logger = builder->build();
 
     //bench_log("sync_logger", 1, 2000000, 100);
     bench_log("sync_logger", 3, 2000000, 100);
@@ -76,20 +76,20 @@ void sync_bench()
 // 创建异步文件日志器并执行性能测试。
 void async_bench()
 {
-     std::unique_ptr<bitlog::LoggerBuilder> builder(
-        new bitlog::GlobalLoggerBuilder()
+     std::unique_ptr<duallog::LoggerBuilder> builder(
+        new duallog::GlobalLoggerBuilder()
     );
 
     builder->buildLoggerName("async_logger");
-    builder->buildLimitLevel(bitlog::LogLevel::Level::DEBUG);
+    builder->buildLimitLevel(duallog::LogLevel::Level::DEBUG);
     builder->buildFormatter(
         "[%d{%Y-%m-%d %H:%M:%S}][%c][%f:%l][%p]%T%m%n"
     );
-    builder->buildLoggerType(bitlog::LoggerType::LOGGER_ASYNC);
+    builder->buildLoggerType(duallog::LoggerType::LOGGER_ASYNC);
    // builder->buildEnableUnSafeAsync();// 开启不安全的异步模式----主要是为了将实际落地时间和日志输出时间分离，避免落地慢导致日志输出慢的情况
-    builder->buildSinks<bitlog::FileSink>("./logfile/async.log");
+    builder->buildSinks<duallog::FileSink>("./logfile/async.log");
 
-    bitlog::Logger::ptr logger = builder->build();
+    duallog::Logger::ptr logger = builder->build();
 
     //bench_log("sync_logger", 1, 2000000, 100);
     bench_log("async_logger", 3, 2000000, 100);

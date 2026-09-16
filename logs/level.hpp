@@ -4,9 +4,9 @@
 
 
 */
-#ifndef __M_LEVEL_H__
-#define __M_LEVEL_H__
-namespace bitlog
+#ifndef DUALLOG_LEVEL_HPP
+#define DUALLOG_LEVEL_HPP
+namespace duallog
 {
     // 日志等级工具类：定义日志等级，并提供等级到字符串的转换。
     class LogLevel

@@ -3,8 +3,8 @@
     2. 派生子类（根据不同的落地方向进行派生）
     3. 使用工厂模式进行创建与表示的分离
 */
-#ifndef __M_SINK_H__
-#define __M_SINK_H__
+#ifndef DUALLOG_SINK_HPP
+#define DUALLOG_SINK_HPP
 #include "util.hpp"
 #include <cstddef>
 #include <iostream>
@@ -12,7 +12,7 @@
 #include <memory>
 #include <fstream>
 #include <assert.h>
-namespace bitlog
+namespace duallog
 {
     // 日志落地接口：所有输出目标都实现 log 方法。
     class LogSink
@@ -44,7 +44,7 @@ namespace bitlog
         FileSink(const std::string &filename) : _filename(filename)
         {
             // 1.创建日志文件所在的目录
-            bitlog::util::File::createDirectory(bitlog::util::File::path(_filename));
+            duallog::util::File::createDirectory(duallog::util::File::path(_filename));
             // 2.创建并打开日志文件
             _ofs.open(_filename, std::ios::binary | std::ios::app);
             assert(_ofs.is_open() && "日志文件打开失败，请检查文件路径是否正确");
@@ -69,7 +69,7 @@ namespace bitlog
         {
             // 1.创建日志文件所在的目录
             std::string filename = createNewFile();
-            bitlog::util::File::createDirectory(bitlog::util::File::path(filename));
+            duallog::util::File::createDirectory(duallog::util::File::path(filename));
             // 2.创建并打开日志文件
             _ofs.open(filename, std::ios::binary | std::ios::app);
             assert(_ofs.is_open() && "日志文件打开失败，请检查文件路径是否正确");
@@ -83,7 +83,7 @@ namespace bitlog
                 _ofs.close();
                 // 2.创建新文件
                 std::string filename = createNewFile();
-                bitlog::util::File::createDirectory(bitlog::util::File::path(filename));
+                duallog::util::File::createDirectory(duallog::util::File::path(filename));
                 // 3.打开新文件
                 _ofs.open(filename, std::ios::binary | std::ios::app);
                 assert(_ofs.is_open() && "日志文件打开失败，请检查文件路径是否正确");

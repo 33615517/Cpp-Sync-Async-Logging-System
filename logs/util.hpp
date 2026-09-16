@@ -1,5 +1,5 @@
-#ifndef _M_UTIL_H_
-#define _M_UTIL_H_
+#ifndef DUALLOG_UTIL_HPP
+#define DUALLOG_UTIL_HPP
 
 /*实用工具类的时间：
     1.获取系统时间
@@ -12,7 +12,7 @@
 #include <string>
 #include <iostream>
 #include <unistd.h>
-namespace bitlog
+namespace duallog
 {
     namespace util
     {

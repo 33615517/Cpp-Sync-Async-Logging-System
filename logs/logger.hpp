@@ -3,8 +3,8 @@
     2.派生出不同的子类（同步日志器&异步日志器）
 
 */
-#ifndef __M_LOGGER_H__
-#define __M_LOGGER_H__
+#ifndef DUALLOG_LOGGER_HPP
+#define DUALLOG_LOGGER_HPP
 #include "sink.hpp"
 #include "level.hpp"
 #include "format.hpp"
@@ -14,7 +14,7 @@
 #include <mutex>
 #include <cstdarg>
 #include <unordered_map>
-namespace bitlog
+namespace duallog
 {
     // 日志器抽象基类：负责接收日志请求，并保存格式器和输出目标。
     class Logger
@@ -386,7 +386,7 @@ namespace bitlog
         // 创建并注册默认 root 日志器。
         LoggerManager()
         {
-            std::unique_ptr<bitlog::LoggerBuilder> builder(new bitlog::LocalLoggerBuilder());
+            std::unique_ptr<duallog::LoggerBuilder> builder(new duallog::LocalLoggerBuilder());
             builder->buildLoggerName("root");
             _root_logger = builder->build();
             _loggers.insert({"root", _root_logger});

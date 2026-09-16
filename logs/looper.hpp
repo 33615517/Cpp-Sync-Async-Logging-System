@@ -1,6 +1,6 @@
 /*实现异步工作器*/
-#ifndef __M_LOOPER_H__
-#define __M_LOOPER_H__
+#ifndef DUALLOG_LOOPER_HPP
+#define DUALLOG_LOOPER_HPP
 
 #include "buffer.hpp"
 #include <condition_variable>
@@ -9,7 +9,7 @@
 #include <memory>
 #include <mutex>
 #include <atomic>
-namespace bitlog
+namespace duallog
 {
     using Functor = std::function<void(Buffer &)>; // 定义函数对象类型，表示异步工作器的工作函数。
     // 异步缓冲策略：安全模式限制内存使用，非安全模式允许缓冲区持续扩容。
