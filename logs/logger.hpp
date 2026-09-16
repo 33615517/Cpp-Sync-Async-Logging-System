@@ -9,9 +9,11 @@
 #include "level.hpp"
 #include "format.hpp"
 #include "util.hpp"
+#include "looper.hpp"
 #include <atomic>
 #include <mutex>
 #include <cstdarg>
+#include <unordered_map>
 namespace bitlog
 {
     // 日志器抽象基类：负责接收日志请求，并保存格式器和输出目标。
@@ -22,6 +24,11 @@ namespace bitlog
         Logger(const std::string &logger_name, LogLevel::Level limit_level, Formatter::ptr formatter, const std::vector<LogSink::ptr> &sinks)
             : _logger_name(logger_name), _limit_level(limit_level), _formatter(formatter), _sinks(sinks) {
               };
+        virtual ~Logger() = default;
+        const std::string &name()
+        {
+            return _logger_name;
+        }
         /*完成构造日志消息对象过程并进行格式化，得到格式化后的日志消息字符串---然后进行落地输出*/
         // 记录 DEBUG 级别日志。
         void debug(const std::string &file, size_t line, const std::string &fmt, ...)
@@ -200,7 +207,36 @@ namespace bitlog
             }
         }
     };
+    class AsyncLogger : public Logger
+    {
+    public:
+        AsyncLogger(const std::string &logger_name,
+                    LogLevel::Level limit_level,
+                    Formatter::ptr formatter,
+                    const std::vector<LogSink::ptr> &sinks,
+                    AsyncType Looper_type)
+            : Logger(logger_name, limit_level, formatter, sinks),
+              _looper(std::make_shared<AsyncLooper>(std::bind(&AsyncLogger::realLog, this, std::placeholders::_1), Looper_type)) {
+              };
+        void log(const char *date, size_t size) override
+        {
+            _looper->push(date, size);
+        }
+        void realLog(Buffer &buffer)
+        {
+            if (_sinks.empty())
+            {
+                return;
+            }
+            for (auto &sink : _sinks)
+            {
+                sink->log(buffer.begin(), buffer.readAbleSize());
+            }
+        }
 
+    private:
+        AsyncLooper::ptr _looper;
+    };
     enum class LoggerType
     {
         LOGGER_SYNC,  // 同步日志器
@@ -214,16 +250,18 @@ namespace bitlog
     {
     public:
         using ptr = std::shared_ptr<LoggerBuilder>; // 日志器建造者的共享指针类型。
-        LoggerBuilder():
-            _logger_type(LoggerType::LOGGER_SYNC),
-            _limit_level(LogLevel::Level::DEBUG)
-            {}
-        ~LoggerBuilder() = default;
+        LoggerBuilder() : _logger_type(LoggerType::LOGGER_SYNC),
+                          _limit_level(LogLevel::Level::DEBUG),
+                          _looper_type(AsyncType::ASYNC_SAFE)
+        {
+        }
+        virtual ~LoggerBuilder() = default;
         // 设置日志器类型
         void buildLoggerType(LoggerType logger_type)
         {
             _logger_type = logger_type;
         }
+        void buildEnableUnSafeAsync() { _looper_type = AsyncType::ASYNC_UNSAFE; }
         // 设置日志器名称
         void buildLoggerName(const std::string &logger_name)
         {
@@ -250,7 +288,8 @@ namespace bitlog
         virtual Logger::ptr build() = 0;
 
     protected:
-        LoggerType _logger_type;            // 日志器类型
+        AsyncType _looper_type;
+        LoggerType _logger_type;          // 日志器类型
         std::string _logger_name;         // 日志器名称
         LogLevel::Level _limit_level;     // 日志器最低输出等级
         Formatter::ptr _formatter;        // 日志器格式化规则
@@ -263,26 +302,112 @@ namespace bitlog
         Logger::ptr build() override
         {
             assert(_logger_name.empty() == false && "日志器名称不能为空");
-            if(_formatter.get() == nullptr)
+            if (_formatter.get() == nullptr)
             {
                 _formatter = std::make_shared<Formatter>();
             }
-            if(_sinks.empty())
+            if (_sinks.empty())
             {
                 buildSinks<StdoutSink>();
             }
-            if(_logger_type == LoggerType::LOGGER_SYNC)
+            if (_logger_type == LoggerType::LOGGER_SYNC)
             {
                 return std::make_shared<SyncLogger>(_logger_name, _limit_level, _formatter, _sinks);
             }
             else
             {
-                // 目前只实现了同步日志器，异步日志器暂未实现
-                assert(false && "异步日志器暂未实现");
-                return nullptr;
+                return std::make_shared<AsyncLogger>(_logger_name, _limit_level, _formatter, _sinks, _looper_type);
             }
         }
     };
+
+    class LoggerManager
+    {
+    public:
+        static LoggerManager &getInstance()
+        {
+            static LoggerManager instance;
+            return instance;
+        }
+        void addLogger(Logger::ptr logger)
+        {
+            if (hasLogger(logger->name()))
+            {
+                std::cout << "logger name already exists!" << std::endl;
+                return;
+            }
+            std::lock_guard<std::mutex> lock(_mutex);
+            _loggers.insert({logger->name(), logger});
+        }
+
+        bool hasLogger(const std::string &name)
+        {
+            std::lock_guard<std::mutex> lock(_mutex);
+            auto it = _loggers.find(name);
+            return it != _loggers.end();
+        }
+        Logger::ptr getLogger(const std::string &name)
+        {
+            std::lock_guard<std::mutex> lock(_mutex);
+            auto it = _loggers.find(name);
+            if (it != _loggers.end())
+            {
+                return it->second;
+            }
+            else
+            {
+                std::cout << "logger name not found!" << std::endl;
+                return nullptr;
+            }
+        }
+        Logger::ptr rootLogger()
+        {
+            return _root_logger;
+        }
+
+    private:
+        LoggerManager()
+        {
+            std::unique_ptr<bitlog::LoggerBuilder> builder(new bitlog::LocalLoggerBuilder());
+            builder->buildLoggerName("root");
+            _root_logger = builder->build();
+            _loggers.insert({"root", _root_logger});
+        }
+
+    private:
+        std::mutex _mutex;
+        Logger::ptr _root_logger;                              // 默认日志器
+        std::unordered_map<std::string, Logger::ptr> _loggers; // 所有日志器
+    };
+    // 设置一个全局日志器的建造者--在局部的基础上增加一个功能：将一个日志器添加到的单例对象中
+    class GlobalLoggerBuilder : public LoggerBuilder
+    {
+    public:
+        Logger::ptr build() override
+        {
+            assert(_logger_name.empty() == false && "日志器名称不能为空");
+            if (_formatter.get() == nullptr)
+            {
+                _formatter = std::make_shared<Formatter>();
+            }
+            if (_sinks.empty())
+            {
+                buildSinks<StdoutSink>();
+            }
+            Logger::ptr logger;
+            if (_logger_type == LoggerType::LOGGER_SYNC)
+            {
+                logger = std::make_shared<SyncLogger>(_logger_name, _limit_level, _formatter, _sinks);
+            }
+            else
+            {
+                logger = std::make_shared<AsyncLogger>(_logger_name, _limit_level, _formatter, _sinks, _looper_type);
+            }
+            LoggerManager::getInstance().addLogger(logger);
+            return logger;
+        }
+    };
+
 }
 
 #endif
