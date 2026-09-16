@@ -4,6 +4,7 @@
 #include <vector>
 #include <chrono>
 #include <algorithm>
+// 使用指定日志器启动多个线程，并统计日志提交速度。
 void bench_log(const std::string &logger_name, size_t thr_count, size_t msg_count, size_t msg_size)
 {
     // 1.获取日志器
@@ -52,6 +53,7 @@ void bench_log(const std::string &logger_name, size_t thr_count, size_t msg_coun
     // 9.进行输出打印
     std::cout << "总日志数量：" << msg_count << "，总耗时：" << max_cost << "秒，平均每秒输出日志数量：" << msg_per_sec << "条/秒，平均每秒输出日志大小：" << size_per_sec << "KB/秒" << std::endl;
 }
+// 创建同步文件日志器并执行性能测试。
 void sync_bench()
 {
     std::unique_ptr<bitlog::LoggerBuilder> builder(
@@ -71,29 +73,30 @@ void sync_bench()
     //bench_log("sync_logger", 1, 2000000, 100);
     bench_log("sync_logger", 3, 2000000, 100);
 }
+// 创建异步文件日志器并执行性能测试。
 void async_bench()
 {
      std::unique_ptr<bitlog::LoggerBuilder> builder(
         new bitlog::GlobalLoggerBuilder()
     );
 
-    builder->buildLoggerName("sync_logger");
+    builder->buildLoggerName("async_logger");
     builder->buildLimitLevel(bitlog::LogLevel::Level::DEBUG);
     builder->buildFormatter(
         "[%d{%Y-%m-%d %H:%M:%S}][%c][%f:%l][%p]%T%m%n"
     );
     builder->buildLoggerType(bitlog::LoggerType::LOGGER_ASYNC);
-    builder->buildEnableUnSafeAsync();// 开启不安全的异步模式----主要是为了将实际落地时间和日志输出时间分离，避免落地慢导致日志输出慢的情况
+   // builder->buildEnableUnSafeAsync();// 开启不安全的异步模式----主要是为了将实际落地时间和日志输出时间分离，避免落地慢导致日志输出慢的情况
     builder->buildSinks<bitlog::FileSink>("./logfile/async.log");
 
     bitlog::Logger::ptr logger = builder->build();
 
     //bench_log("sync_logger", 1, 2000000, 100);
-    bench_log("sync_logger", 3, 2000000, 100);
+    bench_log("async_logger", 3, 2000000, 100);
 }
 int main()
 {
-    //sync_bench();
-    async_bench();
+    sync_bench();
+    //async_bench();
     return 0;
 }

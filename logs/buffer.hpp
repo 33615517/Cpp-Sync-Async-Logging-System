@@ -12,9 +12,11 @@ namespace bitlog
 #define DEFAULT_BUFFER_SIZE (1 * 1024 * 1024)
 #define THRESHOLD_BUFFER_SIZE (8 * 1024 * 1024) // 8MD
 #define INCREMENT_BUFFER_SIZE (1 * 1024 * 1024) // 1MB
+    // 异步日志缓冲区：保存生产者写入、等待消费者处理的连续日志数据。
     class Buffer
     {
     public:
+        // 创建指定初始容量的缓冲区，并将读写位置置零。
         Buffer(size_t size = DEFAULT_BUFFER_SIZE) : _buffer(size), _reader_idx(0), _writer_idx(0) {}
 
         // 向缓冲区写入数据
@@ -54,6 +56,7 @@ namespace bitlog
         {
             return _writer_idx - _reader_idx;
         }
+        // 将读位置向后移动 len 个字节。
         void moveReader(size_t len)
         {
             assert(len <= readAbleSize());
@@ -107,7 +110,7 @@ namespace bitlog
         }
 
     private:
-        std::vector<char> _buffer;
+        std::vector<char> _buffer; // 实际保存日志字节的数据区。
         size_t _reader_idx; // 当前可读的指针--本质下标
         size_t _writer_idx; // 当前可写的指针--本质下标
     };

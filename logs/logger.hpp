@@ -21,17 +21,19 @@ namespace bitlog
     {
     public:
         using ptr = std::shared_ptr<Logger>; // 日志器的共享指针类型。
+        // 保存日志器名称、最低输出等级、格式器和所有落地目标。
         Logger(const std::string &logger_name, LogLevel::Level limit_level, Formatter::ptr formatter, const std::vector<LogSink::ptr> &sinks)
             : _logger_name(logger_name), _limit_level(limit_level), _formatter(formatter), _sinks(sinks) {
               };
         virtual ~Logger() = default;
+        // 获取日志器名称。
         const std::string &name()
         {
             return _logger_name;
         }
         /*完成构造日志消息对象过程并进行格式化，得到格式化后的日志消息字符串---然后进行落地输出*/
         // 记录 DEBUG 级别日志。
-        void debug(const std::string &file, size_t line, const std::string &fmt, ...)
+        void debug(const char *file, size_t line, const char *fmt, ...)
         {
             // 通过传入的参数构造日志消息对象，进行日志的格式化，最终落地
             // 1.判断当前日志等级是否达到输出等级要求
@@ -44,20 +46,20 @@ namespace bitlog
             //  处理日志消息
             va_list ap;
             va_start(ap, fmt);
-            char *res;
-            int ret = vasprintf(&res, fmt.c_str(), ap);
+            char *res = nullptr;
+            int ret = vasprintf(&res, fmt, ap);
             va_end(ap);
             if (ret == -1)
             {
                 std::cout << "vasprintf failed!\n,日志消息格式化失败" << std::endl;
                 return;
             }
-            serialize(LogLevel::Level::DEBUG, file, line, fmt, res);
+            serialize(LogLevel::Level::DEBUG, file, line, res);
             // 释放内存
             free(res);
         }
         // 记录 INFO 级别日志。
-        void info(const std::string &file, size_t line, const std::string &fmt, ...)
+        void info(const char *file, size_t line, const char *fmt, ...)
         {
             // 通过传入的参数构造日志消息对象，进行日志的格式化，最终落地
             // 1.判断当前日志等级是否达到输出等级要求
@@ -70,20 +72,20 @@ namespace bitlog
             //  处理日志消息
             va_list ap;
             va_start(ap, fmt);
-            char *res;
-            int ret = vasprintf(&res, fmt.c_str(), ap);
+            char *res = nullptr;
+            int ret = vasprintf(&res, fmt, ap);
             va_end(ap);
             if (ret == -1)
             {
                 std::cout << "vasprintf failed!\n,日志消息格式化失败" << std::endl;
                 return;
             }
-            serialize(LogLevel::Level::INFO, file, line, fmt, res);
+            serialize(LogLevel::Level::INFO, file, line, res);
             // 释放内存
             free(res);
         }
         // 记录 WARN 级别日志。
-        void warn(const std::string &file, size_t line, const std::string &fmt, ...)
+        void warn(const char *file, size_t line, const char *fmt, ...)
         {
             // 通过传入的参数构造日志消息对象，进行日志的格式化，最终落地
             // 1.判断当前日志等级是否达到输出等级要求
@@ -96,20 +98,20 @@ namespace bitlog
             //  处理日志消息
             va_list ap;
             va_start(ap, fmt);
-            char *res;
-            int ret = vasprintf(&res, fmt.c_str(), ap);
+            char *res = nullptr;
+            int ret = vasprintf(&res, fmt, ap);
             va_end(ap);
             if (ret == -1)
             {
                 std::cout << "vasprintf failed!\n,日志消息格式化失败" << std::endl;
                 return;
             }
-            serialize(LogLevel::Level::WARN, file, line, fmt, res);
+            serialize(LogLevel::Level::WARN, file, line, res);
             // 释放内存
             free(res);
         }
         // 记录 ERROR 级别日志。
-        void error(const std::string &file, size_t line, const std::string &fmt, ...)
+        void error(const char *file, size_t line, const char *fmt, ...)
         {
             // 通过传入的参数构造日志消息对象，进行日志的格式化，最终落地
             // 1.判断当前日志等级是否达到输出等级要求
@@ -122,20 +124,20 @@ namespace bitlog
             //  处理日志消息
             va_list ap;
             va_start(ap, fmt);
-            char *res;
-            int ret = vasprintf(&res, fmt.c_str(), ap);
+            char *res = nullptr;
+            int ret = vasprintf(&res, fmt, ap);
             va_end(ap);
             if (ret == -1)
             {
                 std::cout << "vasprintf failed!\n,日志消息格式化失败" << std::endl;
                 return;
             }
-            serialize(LogLevel::Level::ERROR, file, line, fmt, res);
+            serialize(LogLevel::Level::ERROR, file, line, res);
             // 释放内存
             free(res);
         }
         // 记录 FATAL 级别日志。
-        void fatal(const std::string &file, size_t line, const std::string &fmt, ...)
+        void fatal(const char *file, size_t line, const char *fmt, ...)
         {
             // 通过传入的参数构造日志消息对象，进行日志的格式化，最终落地
             // 1.判断当前日志等级是否达到输出等级要求
@@ -148,21 +150,22 @@ namespace bitlog
             //  处理日志消息
             va_list ap;
             va_start(ap, fmt);
-            char *res;
-            int ret = vasprintf(&res, fmt.c_str(), ap);
+            char *res = nullptr;
+            int ret = vasprintf(&res, fmt, ap);
             va_end(ap);
             if (ret == -1)
             {
                 std::cout << "vasprintf failed!\n,日志消息格式化失败" << std::endl;
                 return;
             }
-            serialize(LogLevel::Level::FATAL, file, line, fmt, res);
+            serialize(LogLevel::Level::FATAL, file, line, res);
             // 释放内存
             free(res);
         }
 
     protected:
-        void serialize(LogLevel::Level level, const std::string &file, size_t line, const std::string &fmt, char *str)
+        // 组装日志上下文、执行格式化，再交给同步或异步日志器输出。
+        void serialize(LogLevel::Level level, const char *file, size_t line, const char *str)
         {
             // 3.构造日志消息LogMsg对象
             LogMsg msg(level, line, file, _logger_name, str);
@@ -170,7 +173,8 @@ namespace bitlog
             std::stringstream ss;
             _formatter->format(ss, msg);
             // 5.进行日志落地输出
-            log(ss.str().c_str(), ss.str().size());
+            std::string log_msg = ss.str();
+            log(log_msg.c_str(), log_msg.size());
         }
         // 将已经格式化的日志数据交给具体日志器处理。
         virtual void log(const char *date, size_t size) = 0;
@@ -207,9 +211,11 @@ namespace bitlog
             }
         }
     };
+    // 异步日志器：前台线程写入缓冲区，后台线程负责真正的日志落地。
     class AsyncLogger : public Logger
     {
     public:
+        // 创建异步工作器，并将 realLog 注册为后台消费回调。
         AsyncLogger(const std::string &logger_name,
                     LogLevel::Level limit_level,
                     Formatter::ptr formatter,
@@ -218,10 +224,12 @@ namespace bitlog
             : Logger(logger_name, limit_level, formatter, sinks),
               _looper(std::make_shared<AsyncLooper>(std::bind(&AsyncLogger::realLog, this, std::placeholders::_1), Looper_type)) {
               };
+        // 将格式化后的日志提交给异步缓冲区。
         void log(const char *date, size_t size) override
         {
             _looper->push(date, size);
         }
+        // 后台线程回调：将一批缓冲区数据写入所有落地目标。
         void realLog(Buffer &buffer)
         {
             if (_sinks.empty())
@@ -235,8 +243,9 @@ namespace bitlog
         }
 
     private:
-        AsyncLooper::ptr _looper;
+        AsyncLooper::ptr _looper; // 异步缓冲区及后台消费线程。
     };
+    // 日志器类型，用于在建造阶段选择同步或异步实现。
     enum class LoggerType
     {
         LOGGER_SYNC,  // 同步日志器
@@ -250,6 +259,7 @@ namespace bitlog
     {
     public:
         using ptr = std::shared_ptr<LoggerBuilder>; // 日志器建造者的共享指针类型。
+        // 默认创建同步、DEBUG 等级、安全缓冲模式的日志器。
         LoggerBuilder() : _logger_type(LoggerType::LOGGER_SYNC),
                           _limit_level(LogLevel::Level::DEBUG),
                           _looper_type(AsyncType::ASYNC_SAFE)
@@ -261,6 +271,7 @@ namespace bitlog
         {
             _logger_type = logger_type;
         }
+        // 允许异步缓冲区自动扩容，适合性能测试场景。
         void buildEnableUnSafeAsync() { _looper_type = AsyncType::ASYNC_UNSAFE; }
         // 设置日志器名称
         void buildLoggerName(const std::string &logger_name)
@@ -288,14 +299,14 @@ namespace bitlog
         virtual Logger::ptr build() = 0;
 
     protected:
-        AsyncType _looper_type;
+        AsyncType _looper_type;            // 异步日志器的缓冲策略。
         LoggerType _logger_type;          // 日志器类型
         std::string _logger_name;         // 日志器名称
         LogLevel::Level _limit_level;     // 日志器最低输出等级
         Formatter::ptr _formatter;        // 日志器格式化规则
         std::vector<LogSink::ptr> _sinks; // 日志器落地目标
     };
-    // 2.派生出具体的建造者类---局部日志器的建造者 & 全局日志器的建造者(后面添加了全局单例管理器之后，将日志器添加到全局单例管理器中，方便全局获取日志器)
+    // 局部日志器建造者：创建日志器，但不注册到全局管理器。
     class LocalLoggerBuilder : public LoggerBuilder
     {
     public:
@@ -321,14 +332,17 @@ namespace bitlog
         }
     };
 
+    // 全局日志器管理器：按名称保存日志器，并提供默认 root 日志器。
     class LoggerManager
     {
     public:
+        // 获取进程内唯一的日志器管理器实例。
         static LoggerManager &getInstance()
         {
             static LoggerManager instance;
             return instance;
         }
+        // 将日志器注册到管理器；名称重复时不覆盖旧日志器。
         void addLogger(Logger::ptr logger)
         {
             if (hasLogger(logger->name()))
@@ -340,12 +354,14 @@ namespace bitlog
             _loggers.insert({logger->name(), logger});
         }
 
+        // 判断指定名称的日志器是否已经注册。
         bool hasLogger(const std::string &name)
         {
             std::lock_guard<std::mutex> lock(_mutex);
             auto it = _loggers.find(name);
             return it != _loggers.end();
         }
+        // 按名称获取日志器；不存在时返回空指针。
         Logger::ptr getLogger(const std::string &name)
         {
             std::lock_guard<std::mutex> lock(_mutex);
@@ -360,12 +376,14 @@ namespace bitlog
                 return nullptr;
             }
         }
+        // 获取默认 root 日志器。
         Logger::ptr rootLogger()
         {
             return _root_logger;
         }
 
     private:
+        // 创建并注册默认 root 日志器。
         LoggerManager()
         {
             std::unique_ptr<bitlog::LoggerBuilder> builder(new bitlog::LocalLoggerBuilder());
@@ -379,10 +397,11 @@ namespace bitlog
         Logger::ptr _root_logger;                              // 默认日志器
         std::unordered_map<std::string, Logger::ptr> _loggers; // 所有日志器
     };
-    // 设置一个全局日志器的建造者--在局部的基础上增加一个功能：将一个日志器添加到的单例对象中
+    // 全局日志器建造者：创建日志器，并自动注册到 LoggerManager。
     class GlobalLoggerBuilder : public LoggerBuilder
     {
     public:
+        // 根据当前配置构建日志器，并将它加入全局管理器。
         Logger::ptr build() override
         {
             assert(_logger_name.empty() == false && "日志器名称不能为空");

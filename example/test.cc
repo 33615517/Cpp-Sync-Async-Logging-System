@@ -1,6 +1,7 @@
 #include "../logs/bitlog.h"
 #include<unistd.h>
 
+// 获取指定的全局日志器，并依次输出各个等级的测试日志。
 void test_log(const std::string &logger_name)
 {
     DEBUG("%s","测试开始");

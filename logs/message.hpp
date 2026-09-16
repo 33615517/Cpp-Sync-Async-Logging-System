@@ -13,7 +13,7 @@
 #include "level.hpp"
 #include <string>
 #include <thread>
-#include"util.hpp"
+#include "util.hpp"
 #include <iostream>
 #include <cstddef>
 namespace bitlog
@@ -31,16 +31,16 @@ namespace bitlog
         // 创建日志消息，并自动记录当前时间和当前线程 ID。
         LogMsg(LogLevel::Level level,
                size_t line,
-               const std::string file,
-               const std::string logger,
-               const std::string msg)
+               const std::string &file,
+               const std::string &logger,
+               std::string msg)
             : _ctime(util::Date::now()),
               _level(level),
               _line(line),
               _tid(std::this_thread::get_id()),
               _file(file),
               _logger(logger),
-              _payload(msg)
+              _payload(std::move(msg))
         {
         }
     };

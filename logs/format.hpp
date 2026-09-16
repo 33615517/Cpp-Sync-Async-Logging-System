@@ -52,7 +52,7 @@ namespace bitlog
     public:
         // 保存时间格式；默认只输出时、分、秒。
         TimeFormatItem(const std::string &fmt = "%H:%M:%S")
-            : _time_fmt(fmt)
+            : _time_fmt(fmt.empty() ? "%H:%M:%S" : fmt)
         {
         }
 
@@ -163,6 +163,7 @@ namespace bitlog
     %m 表示主体消息
     %n 表示换行
 */
+    // 日志格式化器：解析 pattern，并按顺序组合各个格式化子项。
     class Formatter
     {
     public:
@@ -171,7 +172,8 @@ namespace bitlog
         Formatter(const std::string &pattern = "[%d{%H:%M:%S}][%t] [%c][%f:%l]%T%m%n")
             : _pattern(pattern)
         {
-            assert(parsePattern());
+            bool ret = parsePattern();
+            assert(ret);
         }
         // 按照格式规则把日志消息写入指定输出流。
         void format(std::ostream &out, const LogMsg &msg)
@@ -196,7 +198,7 @@ namespace bitlog
             // 1. 对格式化规则字符串进行解析
             // abcde[%d{%H:%M:%S}][%p]%T%m%n
             std::vector<std::pair<std::string, std::string>> fmt_order; // 按出现顺序保存标记和参数。
-            size_t pos = 0; // 当前解析位置。
+            size_t pos = 0;                                             // 当前解析位置。
 
             std::string key, val; // key 是格式标记，val 是标记参数或普通文本。
             while (pos < _pattern.size())
@@ -242,10 +244,15 @@ namespace bitlog
                     }
                     pos++; // 因为遇到了}，所以pos需要+1
                 }
-                else pos++; // 没有{}，所以pos需要+1
+                else
+                    pos++; // 没有{}，所以pos需要+1
                 fmt_order.push_back(std::make_pair(key, val));
                 key.clear();
                 val.clear();
+            }
+            if (!val.empty())
+            {
+                fmt_order.push_back(std::make_pair("", val));
             }
             // 2. 根据解析得到的数据初始化格式化子项数组成员
             for (auto &kv : fmt_order)

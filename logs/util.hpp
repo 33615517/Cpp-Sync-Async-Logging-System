@@ -16,6 +16,7 @@ namespace bitlog
 {
     namespace util
     {
+        // 时间工具：提供日志系统需要的当前时间戳。
         class Date
         {
         public:
@@ -25,6 +26,7 @@ namespace bitlog
                 return (size_t)time(nullptr);
             }
         };
+        // 文件工具：负责路径解析、存在性检查和递归创建目录。
         class File
         {
         public:
@@ -65,6 +67,7 @@ namespace bitlog
                     if (pos == std::string::npos)
                     {
                         mkdir(pathname.c_str(), 0777);
+                        break;
                     }
                     std::string parent_dir = pathname.substr(0, pos + 1); // 当前需要检查的父目录。
                     // if(parent_dir == "." || parent_dir == "..")
